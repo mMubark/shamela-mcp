@@ -1,0 +1,265 @@
+<div dir="rtl">
+
+# خادم المكتبة الشاملة لـ Claude
+
+**اسأل كلود، ودعه يجيبك من كتبك أنت.**
+
+بحث في نصوص مكتبتك الشاملة المثبَّتة على جهازك — آلاف الكتب في العقيدة والتفسير والحديث
+والفقه واللغة — وجواب موثَّق بالنقل عن الكتاب والجزء والصفحة والباب.
+
+يعمل على جهازك بلا اتصال بالشبكة، ويقرأ ملفات الشاملة قراءةً فقط ولا يعدّل فيها شيئًا.
+
+</div>
+
+<div dir="rtl">
+
+## ماذا ستحصل عليه
+
+تسأل كلود سؤالًا علميًّا، فيبحث في كتبك ويجيبك بنقول موثَّقة على هذه الصورة:
+
+> … ونصّ الشافعية على أن سجود السهو قبل السلام، قال ابن حجر الهيتمي: «…»
+>
+> `[تحفة المحتاج في شرح المنهاج | ج2 | ص199 | باب سجود السهو | ابن حجر الهيتمي (ت 974)]`
+
+<!-- صورة ①: محادثة حقيقية في كلود، والسؤال عن مسألة فقهية، والجواب بالنقول والإحالات ظاهرة -->
+
+</div>
+
+<div dir="rtl">
+
+## ما تحتاجه قبل البدء
+
+| المطلوب | ملاحظة |
+|---|---|
+| ويندوز ١٠ أو ١١ | (ويعمل على ماك ولينكس أيضًا لمن ثبّت الشاملة عليهما) |
+| المكتبة الشاملة ٤ مثبَّتة | ومعها الكتب التي تريد البحث فيها **منزَّلة** |
+| تطبيق Claude Desktop | من [claude.ai/download](https://claude.ai/download) |
+
+**لا تحتاج معرفة بالبرمجة، ولا إلى تثبيت جافا، ولا إلى صلاحيات مدير الجهاز.**
+المثبّت يتكفّل بكل شيء، ويستعمل جافا ومحرك البحث المرفقين أصلًا مع المكتبة الشاملة.
+
+</div>
+
+<div dir="rtl">
+
+## التثبيت — ثلاث خطوات
+
+**١) نزّل البرنامج وفكّ الضغط**
+
+نزّل الحزمة من [صفحة الإصدارات](https://github.com/mMubark/shamela-mcp/releases)، وفكّ ضغطها
+في مجلد **دائم** (مثل `D:\shamela-mcp`) — لا في مجلد التنزيلات المؤقتة، لأن البرنامج
+سيبقى يعمل من مكانه.
+
+**٢) انقر نقرًا مزدوجًا على `setup.bat`**
+
+<!-- صورة ②: نافذة المثبّت وقد وصلت إلى "اكتمل التثبيت ✅" -->
+
+سيقوم المثبّت بكل شيء وحده: يجد مكتبتك الشاملة، ويهيّئ ما يلزم، ويجرّب بحثًا حقيقيًّا
+للتأكد، ثم يضيف الخادم إلى إعدادات كلود (مع نسخة احتياطية من إعداداتك السابقة).
+
+- إن ظهرت نافذة تحذير من ويندوز (SmartScreen): اختر **More info** ثم **Run anyway**.
+  <!-- صورة ③: نافذة SmartScreen مع إشارة إلى More info ثم Run anyway -->
+- إن لم يكن بايثون (Python) مثبَّتًا: سيعرض المثبّت تثبيته تلقائيًّا، فاضغط أي زر ووافق.
+- إن لم يجد مكتبتك الشاملة: سيطلب منك المسار — افتح مجلد الشاملة في مستكشف الملفات،
+  وانسخ المسار من شريط العنوان، والصقه في النافذة واضغط Enter.
+
+**٣) أغلق Claude Desktop إغلاقًا تامًّا ثم افتحه**
+
+هذه الخطوة هي أكثر ما يُخطئ فيه الناس: **الضغط على ✕ لا يُغلق التطبيق**، وإنما يخفيه.
+
+انقر بالزر الأيمن على أيقونة Claude بجوار الساعة (أسفل يمين الشاشة) ← **Quit**، ثم افتح
+التطبيق من جديد.
+
+<!-- صورة ④: أيقونة كلود في شريط المهام والزر الأيمن مفتوح على Quit -->
+
+</div>
+
+<div dir="rtl">
+
+## تأكّد أن كل شيء يعمل
+
+افتح محادثة جديدة في كلود واكتب:
+
+```
+افحص مكتبة الشاملة
+```
+
+سيعرض لك تقريرًا: مسار المكتبة، وعدد كتبك، وحالة فهرس البحث، وأن كل شيء جاهز.
+
+<!-- صورة ⑤: مخرجات الفحص وفيها ✅ بجانب كل بند -->
+
+> أول مرة يستعمل كلود الأدوات سيسألك الإذن. اختر **Always allow** حتى لا يسألك في كل مرة.
+>
+> وأول بحث يستغرق ثوانٍ لتحميل فهرس البحث الضخم، ثم تصير البحوث سريعة.
+
+</div>
+
+<div dir="rtl">
+
+## كيف تسأل كلود — أمثلة
+
+اكتب سؤالك كما تكتبه لطالب علم؛ وكلود يختار الأداة والنطاق المناسبين وحده.
+
+| ما تكتبه | ما سيفعله كلود |
+|---|---|
+| ما أحكام سجود السهو عند الشافعية؟ | يبحث في قسم الفقه الشافعي، ويجيب بالنصوص وإحالاتها |
+| اجمع لي أقوال المفسرين في قوله تعالى ﴿وإذ قال ربك للملائكة﴾ | يبحث في قسمَي التفسير وعلوم القرآن |
+| خرّج لي حديث «إنما الأعمال بالنيات» ومن أخرجه | يبحث في كتب السنة والشروح والتخريج |
+| ابحث في المغني لابن قدامة عن حكم صلاة المسافر خلف المقيم | يجد الكتاب، ثم يبحث داخله وحده |
+| ما تعريف الاستحسان عند الأصوليين، مع النقول؟ | يبحث في قسم أصول الفقه |
+| اعرض لي فهرس كتاب الأم للشافعي، وأريد نصّ باب صلاة العيدين | يعرض الفهرس، ثم يجلب نصّ الباب |
+| ابحث في كل المكتبة عن لفظ «الاستصناع» وبيّن في أي الفنون يرد | يبحث في المكتبة كلها ويوزّع النتائج |
+| متى توفي ابن رجب الحنبلي، ومن ترجم له؟ | يبحث في قسم التراجم والطبقات |
+| ما ورد في «الطلاق» بجميع مشتقاته؟ | يبحث بالجذر، فيجد: يطلق، مطلقة، طالق… |
+
+ولمزيد من التفصيل اكتب: `اشرح لي دليل استعمال أدوات الشاملة`.
+
+</div>
+
+<div dir="rtl">
+
+## شكل الإجابة الموثَّقة
+
+مع كل موضع يجده كلود تُرفَق **إحالة جاهزة** بهذه الصورة:
+
+```
+[اسم الكتاب | الجزء | الصفحة | الباب | المؤلف (ت سنة الوفاة)]
+```
+
+مثال: `[صحيح البخاري | ج2 | ص145 | باب فضل صلاة الجماعة | محمد بن إسماعيل البخاري (ت 256)]`
+
+وينبغي أن تعلم أمرين:
+
+- **الترقيم ترقيم المكتبة الشاملة**، وقد يخالف ترقيم الطبعات الورقية. وما لا تسجّله
+  الشاملة (كرقم الجزء في بعض الكتب) لا يُخترع، بل يُذكر أنه غير مرقّم.
+- **حاشية المحقِّق تُعرض مفصولة** عن نصّ المصنّف ومنبَّهًا عليها، فلا تُنسب إلى المؤلف.
+
+> هذه أداة بحث وتوثيق تنقل لك نصوص كتبك وتدلّك على مواضعها، وليست جهة إفتاء ولا ترجيح.
+> والحكم على النقول وترجيح الأقوال لأهل العلم.
+
+</div>
+
+<div dir="rtl">
+
+## الأسئلة الشائعة وحلّ المشكلات
+
+**الأدوات لا تظهر في كلود، أو يقول إنه لا يستطيع البحث في مكتبتي.**
+الغالب أنك لم تُغلق كلود إغلاقًا تامًّا. انقر بالزر الأيمن على أيقونته بجوار الساعة ←
+Quit ← ثم افتحه. فالضغط على ✕ يخفي التطبيق ولا يُغلقه.
+
+**أول بحث بطيء جدًّا.**
+فهرس البحث في الشاملة يتجاوز عشرة غيغابايت، وأول قراءة تُحمّل جزءًا منه إلى الذاكرة.
+هذه ثوانٍ تُدفع مرة واحدة عند تشغيل كلود، ثم تصير البحوث سريعة.
+
+**البحث بطيء جدًّا باستمرار.**
+الأرجح أن تطبيق المكتبة الشاملة يُنزّل كتبًا أو يعيد بناء فهارسه الآن، والقراءة أثناء
+ذلك بطيئة جدًّا. انتظر حتى ينتهي. أما فتح الشاملة للقراءة العادية فلا يضرّ.
+
+**كتاب يظهر في البحث عن الكتب، لكن لا يُبحث في نصّه.**
+الكتاب غير منزَّل. افتح تطبيق المكتبة الشاملة ونزّله، ثم أعد المحاولة. والبحث لا يقرأ
+إلا الكتب المنزَّلة.
+
+**مضاد الفيروسات أوقف `setup.bat`.**
+البرنامج كله ملفات نصية مفتوحة (بايثون) وملف جافا صغير مبنيّ من مصدره الموجود في
+المستودع، ولا يحتاج صلاحيات مدير، ولا ينزّل برامج تنفيذية. اسمح له، أو راجع مصدره في
+مجلد `shamela_mcp` و`java/src`.
+
+**بحثتُ عن كلمة أعلم أنها في الكتاب فلم يجدها.**
+البحث لفظي: يجد الألفاظ لا المعاني. جرّب صيغة أخرى للكلمة، أو اطلب من كلود
+«ابحث عنها بالجذر»، أو وسّع النطاق. ولو تكرّر ذلك بلا سبب فاطلب `افحص مكتبة الشاملة`
+وانظر بند «مطابقة قواعد التطبيع للفهرس».
+
+**هل يعمل مع كلود في المتصفح (claude.ai)؟**
+لا. يعمل مع تطبيق **Claude Desktop** فقط، لأنه يقرأ ملفات على جهازك.
+
+**هل تخرج كتبي إلى الإنترنت؟**
+البرنامج نفسه لا يتصل بالشبكة إطلاقًا، ولا يرسل شيئًا، ويقرأ ملفات الشاملة قراءة فقط
+(ولا يلمس ملفاتك ولا محفوظاتك في التطبيق). لكن كن على علم: ما ينقله كلود في المحادثة
+يمرّ بخدمة كلود كسائر ما تكتبه في أي محادثة — هذا شأن كلود نفسه لا هذه الأداة.
+
+**كيف أحذف البرنامج؟**
+انقر نقرًا مزدوجًا على `uninstall.bat`؛ يُزيل الخادم من إعدادات كلود وحده (مع نسخة
+احتياطية)، ولا يمسّ مكتبتك ولا كتبك. ثم احذف المجلد إن أردت.
+
+</div>
+
+<div dir="rtl">
+
+## الخصوصية والحدود
+
+- **لا اتصال بالشبكة** أثناء العمل. الاتصال يُحتاج مرة واحدة عند التثبيت لتنزيل متطلّبات بايثون.
+- **قراءة فقط**: لا يكتب البرنامج شيئًا في مجلد المكتبة الشاملة.
+- **لا تُنقل كتب**: لا يحتوي هذا المستودع أيّ نصّ من كتب الشاملة ولا ملفاتها.
+- **البحث لفظي لا دلالي**، وخلوّ البحث من نتائج غياب مطابقة لفظية لا نفيٌ للمسألة.
+- **ليست جهة إفتاء**: تنقل وتوثّق ولا تُرجّح.
+
+</div>
+
+---
+
+## For developers (English)
+
+An MCP server that exposes a local **Al-Maktaba Al-Shamela 4** installation to Claude
+Desktop: full-text search over the Lucene indexes Shamela already builds, with
+citations assembled from its SQLite catalogue.
+
+**Architecture.** Python MCP server (stdio) + a ~20 KB Java helper speaking NDJSON over
+a pipe. The helper runs on **Shamela's own bundled JRE 21** with **Shamela's own Lucene
+10.4 jars** on the classpath, so users install no Java and the project ships no
+third-party binaries. SQLite is read from Python (`sqlite3`, read-only URI) because the
+bundled JRE omits `java.sql`.
+
+```
+Claude Desktop ⇄ stdio ⇄ shamela_mcp (Python)
+                            ├── sqlite3 (ro): master.db, book/NNN/<id>.db, service/S2.db
+                            └── NDJSON pipe → Java helper → Lucene: store/page, store/title
+```
+
+**Key design points**
+
+- Query terms are folded in Python to match what Shamela's analyzer did at index time,
+  then sent to Lucene as exact terms. `scripts/probe_index.py` verifies each rule
+  against a live index — including `ئ → ي`, which is easy to get wrong and fails
+  silently (a query for `بئر` finds nothing; the index stores `بير`).
+- Root search uses Shamela's own morphology cache (`service/S2.db`, cp1256) against the
+  `m_body` field. That cache is keyed by *original* spelling, so lookups must not
+  pre-fold.
+- Full page texts are returned, never excerpts: a fiqh argument needs the sentence
+  before the ruling and the qualification after it.
+- Chapter paths are the complete heading chain, walked through `title.parent`.
+- Cursors are bound to the index generation, so a Shamela reindex invalidates them
+  loudly instead of silently resuming at a moved position.
+
+**Development**
+
+```bash
+python -m venv .venv && .venv/Scripts/python -m pip install -e ".[dev]"
+.venv/Scripts/python -m pytest tests/ -q            # unit tests, no library needed
+.venv/Scripts/python -m pytest tests/integration -q # needs a real installation
+.venv/Scripts/python scripts/probe_index.py         # verify folding against the index
+.venv/Scripts/python scripts/smoke_test.py          # exercise every tool
+python scripts/build_java.py                        # rebuild the helper (needs JDK 21)
+```
+
+The built helper jar is committed on purpose: the audience has no JDK, and the whole
+promise is "double-click, no toolchain". Its sources live in `java/src`, and
+`scripts/build_java.py` rebuilds it deterministically (`javac --release 21` against
+lucene-core fetched from Maven Central with an sha1 check — nothing from it is shipped).
+
+**Configuration** (all optional; set in `claude_desktop_config.json` under `env`)
+
+| Variable | Meaning |
+|---|---|
+| `SHAMELA_MCP_DIR` | Library root. Auto-detected when unset. |
+| `SHAMELA_MCP_JAVA` | Override the java executable. |
+| `SHAMELA_MCP_TIMEOUT_MS` | Per-request timeout (default 120000). |
+| `SHAMELA_MCP_IDLE_MS` | Shut the helper down after this idle time (default 300000). |
+| `SHAMELA_MCP_LOG` | Log level on stderr (default WARNING). |
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/SCHEMA.md](docs/SCHEMA.md).
+
+## License
+
+MIT — see [LICENSE](LICENSE). Shamela's software, its indexes, and the books it
+distributes belong to their respective owners; this project only reads a local
+installation. See [NOTICE](NOTICE).

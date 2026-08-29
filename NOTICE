@@ -1,0 +1,60 @@
+shamela-mcp
+Copyright (c) 2026 Mohamad Mubarak
+Licensed under the MIT License (see LICENSE).
+
+================================================================================
+What this project contains, and what it does not
+================================================================================
+
+This repository contains only original source code: a Python MCP server, a small
+Java helper (sources in java/src, built artifact at java/shamela-mcp-helper.jar),
+scripts, tests, and documentation.
+
+It contains NO part of Al-Maktaba Al-Shamela: no book texts, no database files,
+no Lucene indexes, and none of the jars or the Java runtime that Shamela ships.
+It reads an installation already present on the user's own machine, read-only.
+
+================================================================================
+Third-party software used at runtime (not redistributed here)
+================================================================================
+
+Al-Maktaba Al-Shamela (المكتبة الشاملة)
+    https://shamela.ws
+    The desktop application, its databases, its search indexes, and the books it
+    distributes are the property of their respective owners. This project reads a
+    local installation and executes the Java runtime and Apache Lucene jars that
+    Shamela itself installs. Nothing of Shamela's is copied into this repository
+    or into any package built from it.
+
+Apache Lucene 10.4.0
+    Apache License 2.0 — https://lucene.apache.org
+    Loaded at runtime from the user's Shamela installation (app/lucene/*).
+    lucene-core is additionally downloaded from Maven Central at build time to
+    compile the helper against; it is not bundled or redistributed.
+
+AlKhalil Arabic Morphology Analyzer
+    Used indirectly: Shamela built the root-stemmed index field and the morphology
+    cache this project reads. No AlKhalil code or data is included here.
+
+================================================================================
+Dependencies (installed by pip at install time)
+================================================================================
+
+mcp — Model Context Protocol Python SDK
+    MIT License — https://github.com/modelcontextprotocol/python-sdk
+
+================================================================================
+Acknowledgements
+================================================================================
+
+The understanding of Shamela 4's on-disk format, and the approach of bridging to
+its own Lucene jars through a small Java helper, follow prior work by
+alhoqbani/shamela-mcp (MIT License) — https://github.com/alhoqbani/shamela-mcp
+
+================================================================================
+Scope of this tool
+================================================================================
+
+This is a search and citation tool. It locates passages in the user's own books
+and reports where they occur. It does not issue religious rulings, weigh
+scholarly opinions, or assert consensus on behalf of any source.

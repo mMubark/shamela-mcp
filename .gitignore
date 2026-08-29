@@ -1,0 +1,37 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+build/
+dist/
+
+# Java: intermediates ignored. The shipped helper jar IS committed on purpose —
+# users have no JDK, and the whole promise is "double-click, no toolchain".
+java/classes/
+.lucene-build/
+*.jar
+!java/shamela-mcp-helper.jar
+
+# Packaging
+*.mcpb
+
+# Shamela data must never be committed
+*.db
+*.db-shm
+*.db-wal
+*.bok
+
+# Machine-local artifacts
+install.log
+*.log
+.env
+
+# OS / editors
+Thumbs.db
+.DS_Store
+.idea/
+.vscode/
