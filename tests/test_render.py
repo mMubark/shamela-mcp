@@ -8,8 +8,6 @@ lived only in the `content` text block while the client consumed `structuredCont
 
 from __future__ import annotations
 
-import pytest
-
 from shamela_mcp import citation as citation_mod
 from shamela_mcp.engine import Passage, SearchOutcome
 from shamela_mcp.master import Book
@@ -126,3 +124,38 @@ class TestZeroHits:
         passage = make_passage()
         text = search_text(make_outcome([passage]), for_passages())
         assert PAGE_TEXT in text
+
+
+class TestBuildFingerprint:
+    """A stale server process is indistinguishable from a fix that did not work.
+
+    Claude Desktop starts the server once and keeps it alive, so an edit on disk stays
+    dormant until the app is fully quit. This bit the user twice: the page-text fix was
+    already on disk while the running process still withheld the text.
+    """
+
+    def test_running_build_matches_disk_in_a_fresh_process(self) -> None:
+        from shamela_mcp import RUNNING_BUILD, build_id
+
+        assert RUNNING_BUILD == build_id()
+
+    def test_editing_a_source_file_changes_the_fingerprint(self, tmp_path) -> None:
+        import pathlib
+
+        from shamela_mcp import build_id
+
+        target = pathlib.Path(__file__).parent.parent / "shamela_mcp" / "notes.py"
+        before = target.read_bytes()
+        baseline = build_id()
+        try:
+            target.write_bytes(before + b"\n# probe\n")
+            assert build_id() != baseline
+        finally:
+            target.write_bytes(before)
+        assert build_id() == baseline
+
+    def test_fingerprint_is_short_and_stable(self) -> None:
+        from shamela_mcp import build_id
+
+        assert build_id() == build_id()
+        assert len(build_id()) == 12

@@ -18,7 +18,7 @@ from typing import Any
 
 from mcp.types import CallToolResult
 
-from .. import __version__, errors
+from .. import RUNNING_BUILD, __version__, build_id, errors
 from ..bridge import HELPER_JAR
 from ..config import NORMALIZER_VERSION
 from .shared import reply, tool
@@ -53,6 +53,26 @@ def register(mcp, context) -> None:
             "normalizer_version": NORMALIZER_VERSION,
             "environment": context.settings.env_report,
         }
+
+        # ---- is this process running the code currently on disk? ----
+        # Claude Desktop keeps the server process alive across chats, so a fix applied
+        # on disk stays dormant until the app is fully quit. Without this check that
+        # gap looks exactly like a fix that did not work.
+        on_disk = build_id()
+        structured["build"] = RUNNING_BUILD
+        structured["build_on_disk"] = on_disk
+        structured["build_is_current"] = RUNNING_BUILD == on_disk
+        if RUNNING_BUILD != on_disk:
+            lines.append(
+                "✗ النسخة العاملة أقدم من ملفات الخادم على القرص "
+                f"(العاملة {RUNNING_BUILD}، وعلى القرص {on_disk})."
+            )
+            lines.append(
+                "   أغلق Claude Desktop إغلاقًا تامًّا — بالزر الأيمن على أيقونته بجوار "
+                "الساعة ثم Quit، فالضغط على ✕ لا يُغلقه — ثم افتحه لتسري التحديثات."
+            )
+            lines.append("")
+            warnings.append("الخادم يعمل بنسخة قديمة؛ يلزم إغلاق كلود وفتحه")
 
         # ---- library ----
         if not context.has_library:
