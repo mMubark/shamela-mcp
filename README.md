@@ -43,7 +43,45 @@
 
 <div dir="rtl">
 
-## التثبيت — ثلاث خطوات
+## التثبيت — طريقان، اختر أحدهما
+
+| | **حزمة `.mcpb`** (الأيسر) | **المثبّت `setup.bat`** |
+|---|---|---|
+| الخطوات | نقرتان: تنزيل، ثم فتح الملف بكلود | تنزيل، فكّ ضغط، تشغيل المثبّت |
+| بايثون | لا يلزمك تثبيته | يثبّته المثبّت تلقائيًّا إن لم يكن موجودًا |
+| «التحكم الذكي في التطبيقات» | **لا يعترضه** — لا سكربت يُشغَّل | قد يمنع `setup.bat` (وحلّه في الأسئلة الشائعة) |
+| الإنترنت | يلزم مرة واحدة عند أول تشغيل | يلزم مرة واحدة عند التثبيت |
+| عند العطل | افحص من داخل كلود بـ `shamela_health` | سجلّ مفصَّل في `install.log` واختبار بحث حقيقي |
+
+</div>
+
+<div dir="rtl">
+
+## الطريق الأول: حزمة `.mcpb` — نقرتان
+
+**١)** نزّل ملف `shamela-mcp-*.mcpb` من
+[صفحة الإصدارات](https://github.com/mMubark/shamela-mcp/releases).
+
+**٢)** افتح الملف (نقر مزدوج) فيفتحه Claude Desktop ويعرض نافذة تثبيت الإضافة. اضغط
+**Install**.
+
+**٣)** في إعدادات الإضافة، اختر **مجلد المكتبة الشاملة** — أو اتركه فارغًا فيبحث عنه
+الخادم وحده في المواضع المعتادة.
+
+ثم أغلق كلود إغلاقًا تامًّا وافتحه (انظر الخطوة ٣ أدناه، فهي أكثر ما يُخطئ فيه الناس).
+
+- أول تشغيل بعد التثبيت يستغرق دقيقة أو نحوها: الحزمة تجهّز بيئتها وتنزّل متطلّباتها
+  مرة واحدة، ثم لا تعود.
+- الحزمة تحمل معها ملف المحرّك (`jar`)، وتستعمل جافا المرفقة مع مكتبتك الشاملة نفسها.
+- **للتحديث لاحقًا**: نزّل الحزمة الأحدث وافتحها، فتحلّ محلّ القديمة.
+- إن لم تدعم نسخة كلود عندك حزم الإضافات، أو تعذّر تشغيل الخادم بعد التثبيت، فاعدل
+  إلى الطريق الثاني — وهو أقدر على تشخيص العطل.
+
+</div>
+
+<div dir="rtl">
+
+## الطريق الثاني: المثبّت — ثلاث خطوات
 
 **١) نزّل البرنامج وفكّ الضغط**
 
@@ -94,7 +132,11 @@
 
 ## تحديث البرنامج إلى آخر إصدار
 
-كلما صدر تحديث (إصلاح أو أداة جديدة) فالتحديث نقرة واحدة:
+**إن كنت ثبّتَّ بحزمة `.mcpb`**: نزّل الحزمة الأحدث من
+[صفحة الإصدارات](https://github.com/mMubark/shamela-mcp/releases) وافتحها، فتحلّ محلّ
+القديمة وتحتفظ بإعداداتك. وما دون ذلك من هذا القسم فللمثبّت.
+
+**وإن كنت ثبّتَّ بالمثبّت**، فالتحديث نقرة واحدة:
 
 **انقر نقرًا مزدوجًا على `update.bat`، ثم أغلق كلود إغلاقًا تامًّا وافتحه.**
 
@@ -281,8 +323,9 @@ git clone https://github.com/mMubark/shamela-mcp.git D:\shamela-mcp
 «بصمة الشيفرة»؛ فإن قال إن النسخة العاملة أقدم من ملفات القرص فالإغلاق لم يتمّ.
 
 **كيف أحذف البرنامج؟**
-انقر نقرًا مزدوجًا على `uninstall.bat`؛ يُزيل الخادم من إعدادات كلود وحده (مع نسخة
-احتياطية)، ولا يمسّ مكتبتك ولا كتبك. ثم احذف المجلد إن أردت.
+إن ثبّتَّ بحزمة `.mcpb`: من إعدادات كلود ← الإضافات (Extensions) ← احذف الإضافة.
+وإن ثبّتَّ بالمثبّت: انقر نقرًا مزدوجًا على `uninstall.bat`؛ يُزيل الخادم من إعدادات كلود
+وحده (مع نسخة احتياطية)، ثم احذف المجلد إن أردت. وفي الحالين **لا تُمسّ مكتبتك ولا كتبك**.
 
 </div>
 
@@ -342,7 +385,16 @@ python -m venv .venv && .venv/Scripts/python -m pip install -e ".[dev]"
 .venv/Scripts/python scripts/probe_index.py         # verify folding against the index
 .venv/Scripts/python scripts/smoke_test.py          # exercise every tool
 python scripts/build_java.py                        # rebuild the helper (needs JDK 21)
+python scripts/build_mcpb.py                        # pack dist/*.mcpb (needs Node)
 ```
+
+The `.mcpb` bundle is the one-click install path, and the reason it exists is Windows:
+Smart App Control refuses a batch file that came from a browser and offers no way
+through, while a bundle is data the desktop app opens rather than something Windows
+executes. It declares the `uv` server type, so the host resolves Python and the
+dependencies in the generated `pyproject.toml` — the user installs nothing. `mcpb/`
+holds the manifest and the entry point that pins the bundled jar; `scripts/build_mcpb.py`
+stages, validates and packs.
 
 The built helper jar is committed on purpose: the audience has no JDK, and the whole
 promise is "double-click, no toolchain". Its sources live in `java/src`, and
@@ -355,6 +407,7 @@ lucene-core fetched from Maven Central with an sha1 check — nothing from it is
 |---|---|
 | `SHAMELA_MCP_DIR` | Library root. Auto-detected when unset. |
 | `SHAMELA_MCP_JAVA` | Override the java executable. |
+| `SHAMELA_MCP_JAR` | Override the helper jar path. Set by the .mcpb entry point. |
 | `SHAMELA_MCP_TIMEOUT_MS` | Per-request timeout (default 120000). |
 | `SHAMELA_MCP_IDLE_MS` | Shut the helper down after this idle time (default 300000). |
 | `SHAMELA_MCP_LOG` | Log level on stderr (default WARNING). |

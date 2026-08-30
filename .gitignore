@@ -13,6 +13,10 @@ dist/
 # users have no JDK, and the whole promise is "double-click, no toolchain".
 java/classes/
 .lucene-build/
+
+# MCPB: the staging directory is rebuilt from scratch on every pack, and the bundle
+# itself belongs on a release rather than in the history.
+.mcpb-build/
 *.jar
 !java/shamela-mcp-helper.jar
 

@@ -19,12 +19,42 @@ from collections import deque
 from pathlib import Path
 from typing import Any
 
-from . import errors
+from . import config, errors
 from .discover import Library, Runtime
 
 log = logging.getLogger(__name__)
 
-HELPER_JAR = Path(__file__).resolve().parent.parent / "java" / "shamela-mcp-helper.jar"
+JAR_NAME = "shamela-mcp-helper.jar"
+
+
+def find_helper_jar() -> Path:
+    """Locate the helper jar, whatever shape the installation has.
+
+    A repository checkout keeps the jar beside the package in ``java/``; a packaged
+    build keeps it inside the package; an .mcpb bundle keeps it next to the bundled
+    ``lib`` directory. Assuming any one of those layouts is what breaks the other two,
+    and the failure is silent until the first search. The first existing candidate
+    wins, and the repository layout stays last so a checkout never shadows a copy the
+    packager deliberately placed.
+    """
+    package = Path(__file__).resolve().parent
+
+    override = config.cleaned(os.environ.get("SHAMELA_MCP_JAR"))
+    candidates = [Path(override)] if override else []
+    candidates += [
+        package / "java" / JAR_NAME,
+        package.parent / "java" / JAR_NAME,
+        package.parent.parent / "java" / JAR_NAME,
+    ]
+    for candidate in candidates:
+        if candidate.is_file():
+            return candidate
+    # Nothing found: report the conventional location, so the health tool names a path
+    # the user can actually go and look at.
+    return package.parent / "java" / JAR_NAME
+
+
+HELPER_JAR = find_helper_jar()
 
 _CREATE_NO_WINDOW = 0x08000000 if sys.platform == "win32" else 0
 

@@ -71,6 +71,7 @@ class Settings:
         for name in (
             "SHAMELA_MCP_DIR",
             "SHAMELA_MCP_JAVA",
+            "SHAMELA_MCP_JAR",
             "SHAMELA_MCP_TIMEOUT_MS",
             "SHAMELA_MCP_IDLE_MS",
             "SHAMELA_MCP_LOG",

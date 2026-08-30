@@ -1,0 +1,113 @@
+{
+  "manifest_version": "0.4",
+  "name": "shamela",
+  "display_name": "المكتبة الشاملة",
+  "version": "1.1.0",
+  "description": "بحث في نصوص مكتبتك الشاملة المثبَّتة على جهازك، بنقول موثَّقة بالكتاب والجزء والصفحة والباب.",
+  "long_description": "خادم يفتح لكلود مكتبتك الشاملة ٤ المثبَّتة على جهازك: يبحث في نصوص الكتب المنزَّلة، ويعرض الصفحات كاملة، ويعطي مع كل موضع إحالة جاهزة للنقل. يعمل محليًّا بلا اتصال بالشبكة، ويقرأ ملفات الشاملة قراءةً فقط ولا يعدّل فيها شيئًا، ويستعمل جافا ومحرك البحث المرفقين أصلًا مع المكتبة الشاملة.",
+  "author": {
+    "name": "Mohamad Mubarak",
+    "url": "https://github.com/mMubark"
+  },
+  "homepage": "https://github.com/mMubark/shamela-mcp",
+  "documentation": "https://github.com/mMubark/shamela-mcp#readme",
+  "support": "https://github.com/mMubark/shamela-mcp/issues",
+  "license": "MIT",
+  "keywords": [
+    "shamela",
+    "arabic",
+    "islamic",
+    "library",
+    "search",
+    "المكتبة الشاملة"
+  ],
+  "server": {
+    "type": "uv",
+    "entry_point": "src/server.py",
+    "mcp_config": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "${__dirname}",
+        "src/server.py"
+      ],
+      "env": {
+        "SHAMELA_MCP_DIR": "${user_config.library_dir}",
+        "SHAMELA_MCP_JAVA": "${user_config.java_path}"
+      }
+    }
+  },
+  "compatibility": {
+    "platforms": [
+      "win32",
+      "darwin",
+      "linux"
+    ],
+    "runtimes": {
+      "python": ">=3.10,<4.0"
+    }
+  },
+  "user_config": {
+    "library_dir": {
+      "type": "directory",
+      "title": "مجلد المكتبة الشاملة",
+      "description": "المجلد الذي ثبّتَ فيه المكتبة الشاملة ٤ (وفيه مجلدا app وdatabase). اتركه فارغًا ليبحث الخادم عنه وحده في المواضع المعتادة.",
+      "required": false,
+      "multiple": false
+    },
+    "java_path": {
+      "type": "file",
+      "title": "مسار جافا (اختياري)",
+      "description": "لا تملأه إلا إن أخبرك فحص المكتبة أن جافا المرفقة مع الشاملة غير موجودة؛ حينها اختر ملف java.exe.",
+      "required": false,
+      "multiple": false
+    }
+  },
+  "tools": [
+    {
+      "name": "shamela_search",
+      "description": "بحث نصّي في كل كتب المكتبة المنزَّلة"
+    },
+    {
+      "name": "shamela_search_category",
+      "description": "بحث نصّي داخل أقسام مختارة (الفقه، التفسير، الحديث…)"
+    },
+    {
+      "name": "shamela_search_book",
+      "description": "بحث نصّي داخل كتاب واحد بعينه"
+    },
+    {
+      "name": "shamela_search_coverage",
+      "description": "توزيع المطابقات على الكتب: كم كتابًا فيه مطابقة وأين"
+    },
+    {
+      "name": "shamela_get_page",
+      "description": "نصّ صفحة بعينها مع ما قبلها وما بعدها"
+    },
+    {
+      "name": "shamela_get_toc",
+      "description": "فهرس أبواب الكتاب"
+    },
+    {
+      "name": "shamela_find_books",
+      "description": "البحث عن كتاب بالاسم أو المؤلف"
+    },
+    {
+      "name": "shamela_book_info",
+      "description": "بطاقة الكتاب: المؤلف والقسم والأجزاء"
+    },
+    {
+      "name": "shamela_list_categories",
+      "description": "أقسام المكتبة وأرقامها وعدد كتبها"
+    },
+    {
+      "name": "shamela_health",
+      "description": "فحص المكتبة والفهرس وجافا عند أي خلل"
+    },
+    {
+      "name": "shamela_guide",
+      "description": "دليل عربي لاستعمال الأدوات وحدودها"
+    }
+  ]
+}
