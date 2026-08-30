@@ -321,8 +321,13 @@ def build_venv() -> Path:
     if result.returncode != 0:
         warn("تعذّر تحديث pip؛ سيُكمَل التثبيت.")
 
+    # Installed in editable mode on purpose. A plain copy into site-packages means the
+    # code Claude Desktop runs is a snapshot: updating the project then restarting the
+    # app changes nothing, because -m shamela_mcp still imports the old copy, and the
+    # staleness check cannot see the difference either. Editable keeps one source of
+    # truth -- the files in this folder are the files that run.
     result = subprocess.run(
-        [str(VENV_PYTHON), "-m", "pip", "install", "--quiet", str(REPO)],
+        [str(VENV_PYTHON), "-m", "pip", "install", "--quiet", "--editable", str(REPO)],
         capture_output=True,
         text=True,
     )
