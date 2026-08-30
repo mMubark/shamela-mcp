@@ -116,13 +116,23 @@ def zero_hits_text(outcome: SearchOutcome) -> str:
 
 
 def passage_dict(passage: Passage) -> dict:
-    """Structured mirror of a passage. Full text lives in the text block, not here."""
+    """Structured mirror of a passage, page text included.
+
+    The text used to live only in the text block, on the reasoning that a client would
+    show that block to the model and carrying the page twice would waste context. In
+    practice a client that receives structuredContent hands the model *that*, so the
+    scholar got citations with no text to quote and the model summarised from memory
+    instead of transcribing the page -- the one failure this server exists to prevent.
+    Carrying the text in both channels costs tokens; omitting it costs correctness.
+    """
     data = passage.citation.as_dict()
     data.update(
         {
             "match_reason_ar": passage.match_reason_ar,
             "score": round(passage.score, 4),
+            "text_original": passage.text,
             "text_length": len(passage.text),
+            "footnote": passage.footnote or None,
             "has_footnote": bool(passage.footnote),
         }
     )

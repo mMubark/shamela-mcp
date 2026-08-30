@@ -1,8 +1,13 @@
 # Auto detect text files and perform LF normalization
 * text=auto
 
-# Windows batch files must keep CRLF: some cmd.exe versions mis-parse LF-only .bat
+# Batch files MUST be CRLF. cmd.exe mis-parses LF-only .bat files: labels stop
+# resolving and the console window closes with no message at all. Checked by
+# tests/test_batch_files.py, which also forbids non-ASCII bytes in these files.
 *.bat text eol=crlf
+
+# Console message files are streamed with `type` on Windows, so keep CRLF here too.
+assets/*.txt text eol=crlf
 
 # The shipped helper is binary
 *.jar binary
