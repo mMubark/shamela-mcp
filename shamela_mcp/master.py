@@ -225,6 +225,11 @@ class MasterCatalogue:
             if book.category_id in wanted and (book.downloaded or not downloaded_only)
         ]
 
+    def downloaded_book_ids(self) -> list[int]:
+        """Every book whose text is actually on disk -- the true whole-library scope."""
+        self._ensure_loaded()
+        return [book.id for book in self._books.values() if book.downloaded]
+
     def resolve_category(self, given: str) -> Category | None:
         """Accept a category number or an Arabic name, exact or a unique substring."""
         self._ensure_loaded()

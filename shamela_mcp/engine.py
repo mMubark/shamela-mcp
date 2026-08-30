@@ -14,8 +14,8 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from . import citation as citation_mod
+from . import counting, errors, matchinfo
 from . import cursor as cursor_mod
-from . import errors, matchinfo
 from .bookdb import BookRepository
 from .bridge import JavaBridge
 from .config import MAX_SEARCH_LIMIT
@@ -34,6 +34,17 @@ SEARCH_MODES = ("exact", "root")
 MAX_QUERY_TOKENS = 10
 
 HEALTH_CACHE_SECONDS = 60.0
+
+# A large book repeats a phrase dozens of times, so ranking by score alone hands the
+# whole first batch to one or two books and the scholar never learns that forty other
+# books discuss the issue at all. Each book gets a small share of a batch instead, and
+# depth inside one book is reached through shamela_search_book.
+PER_BOOK_CAP = 2
+
+# Diversifying means looking past the batch: hits are cheap here (ids and scores only,
+# no page text), so a wide window is fetched and only the chosen few are assembled.
+OVERFETCH_FACTOR = 6
+MAX_OVERFETCH = 400
 
 
 @dataclass
@@ -64,6 +75,87 @@ class SearchOutcome:
     books_in_scope: int | None = None
     books_searchable: int | None = None
     scope_label_ar: str = "المكتبة كلها"
+    window_start: int = 1
+    deferred_same_book: int = 0
+    books_in_batch: int = 0
+
+
+@dataclass
+class BookCount:
+    """How many pages of one book match, with enough identity to name it."""
+
+    book_id: int
+    book_name: str
+    author_label: str
+    category_name: str
+    hits: int
+
+    def name_line(self) -> str:
+        return f"{self.book_name} — {self.author_label}"
+
+
+@dataclass
+class CoverageOutcome:
+    query: str
+    match_mode: str
+    search_mode: str
+    field: str
+    scope_label_ar: str
+    books_in_scope: int
+    books_with_matches: int
+    total_hits: int
+    books: list[BookCount]
+    shown_hits: int
+    truncated: bool
+    notes_ar: list[str] = field(default_factory=list)
+
+
+def select_hits(
+    hits: list[dict[str, Any]], limit: int, cap: int
+) -> tuple[list[dict[str, Any]], int, int]:
+    """Pick a batch from a ranked window, capping how many hits one book may take.
+
+    Returns ``(chosen, deferred, examined)``: the hits to assemble, how many were set
+    aside because their book had already filled its share, and how far into the window
+    the selection reached. The cursor resumes after exactly ``examined``, so only hits
+    that lie *before* the last delivered one are skipped -- and those are counted and
+    reported rather than dropped in silence.
+
+    The cap is a preference, not a quota: when the window runs out before the batch is
+    full -- which is what happens when only two or three books match at all -- the cap
+    is abandoned for this batch and the plain top of the ranking is taken instead.
+    Diversity is spent only where there is diversity to spend.
+    """
+    chosen: list[tuple[int, dict[str, Any]]] = []
+    deferred: list[tuple[int, dict[str, Any]]] = []
+    per_book: dict[str, int] = {}
+
+    for position, hit in enumerate(hits):
+        if len(chosen) >= limit:
+            break
+        book = str(hit.get("book_id"))
+        if cap > 0 and per_book.get(book, 0) >= cap:
+            deferred.append((position, hit))
+            continue
+        per_book[book] = per_book.get(book, 0) + 1
+        chosen.append((position, hit))
+
+    if len(chosen) < limit and deferred:
+        # The window held fewer books than the cap assumes, so diversifying would cost
+        # results without buying variety. Step aside entirely and take the plain top of
+        # the ranking: a partial cap here would leave gaps that the cursor then skips.
+        head = hits[:limit]
+        return head, 0, len(head)
+
+    if not chosen:
+        return [], 0, 0
+
+    examined = chosen[-1][0] + 1
+    taken = {position for position, _ in chosen}
+    skipped = sum(
+        1 for position, _ in deferred if position < examined and position not in taken
+    )
+    return [hit for _, hit in chosen], skipped, examined
 
 
 class SearchEngine:
@@ -215,33 +307,56 @@ class SearchEngine:
             delivered = resumed.delivered
             known_total = resumed.total
 
+        # One book needs no diversifying, and asking Lucene for six times the pages
+        # there would only slow an already narrow search.
+        diversify = len(scope) != 1
+        cap = PER_BOOK_CAP if diversify else 0
+        fetch = min(limit * OVERFETCH_FACTOR, MAX_OVERFETCH) if diversify else limit
+
         raw = self.bridge.search(
             field=field,
             mode=match_mode,
             groups=groups,
             book_ids=scope or None,
-            limit=limit,
+            limit=fetch,
             after_doc=after_doc,
             after_score=after_score,
         )
 
-        hits = raw.get("hits", [])
+        window = raw.get("hits", [])
+        hits, deferred, examined = select_hits(window, limit, cap)
         total = known_total if known_total is not None else int(raw.get("total_hits", 0))
         passages = self.assemble(hits, groups=groups, match_mode=match_mode, query=query,
                                 root_mode=(field == "m_body"))
 
-        has_more = bool(raw.get("has_more")) and bool(hits)
+        # There is more either because the fetched window was not read to its end, or
+        # because Lucene had ranked hits beyond it.
+        has_more = bool(window) and (examined < len(window) or bool(raw.get("has_more")))
         next_cursor: str | None = None
-        if has_more and "last_doc" in raw:
-            next_cursor = cursor_mod.encode(
-                cursor_mod.Cursor(
-                    fingerprint=fingerprint,
-                    query_hash=query_key,
-                    after_doc=int(raw["last_doc"]),
-                    after_score=float(raw.get("last_score", 0.0)),
-                    delivered=delivered + len(passages),
-                    total=total,
+        if has_more and examined:
+            edge = window[examined - 1]
+            try:
+                after = int(edge["doc"])
+            except (KeyError, TypeError, ValueError):
+                after = int(raw.get("last_doc", -1))
+            if after >= 0:
+                next_cursor = cursor_mod.encode(
+                    cursor_mod.Cursor(
+                        fingerprint=fingerprint,
+                        query_hash=query_key,
+                        after_doc=after,
+                        after_score=float(edge.get("score", 0.0)),
+                        delivered=delivered + len(passages),
+                        total=total,
+                    )
                 )
+
+        if deferred:
+            notes.append(
+                f"أُخِّر {counting.places(deferred)} من كتبٍ استوفت حصّتها في هذه الدفعة "
+                f"({PER_BOOK_CAP} لكل كتاب) لتنويع الكتب المعروضة، وهي مواضع لا تعود في "
+                "الدفعات التالية. لاستيفاء مواضع كتاب بعينه استعمل shamela_search_book، "
+                "ولمعرفة توزيع المطابقات على الكتب استعمل shamela_search_coverage."
             )
 
         if not raw.get("total_hits_exact", True):
@@ -264,6 +379,99 @@ class SearchEngine:
             notes_ar=notes,
             books_in_scope=books_in_scope,
             scope_label_ar=scope_label_ar,
+            window_start=delivered + 1,
+            deferred_same_book=deferred,
+            books_in_batch=len({p.book_id for p in passages}),
+        )
+
+    # ---------- coverage ----------
+
+    def coverage(
+        self,
+        *,
+        query: str,
+        match_mode: str = "all_terms",
+        search_mode: str = "exact",
+        book_ids: list[int],
+        top: int = 25,
+        scope_label_ar: str = "المكتبة كلها",
+    ) -> CoverageOutcome:
+        """Count the matches book by book across the whole scope.
+
+        Ordinary search answers *what* matched best; this answers *where* the matches
+        are -- how many of the books in scope hold the phrase at all, and how the hits
+        divide among them. It is what turns "I searched 153 books" from a claim about
+        the scope into a statement about the result, and it reads only counts, so a
+        whole-library sweep costs one round trip rather than thousands of pages.
+        """
+        if match_mode not in MATCH_MODES:
+            raise errors.bad_argument(
+                f"نمط المطابقة «{match_mode}» غير معروف.",
+                "استعمل phrase أو all_terms أو any_terms.",
+                f"invalid match_mode {match_mode!r}",
+            )
+        if search_mode not in SEARCH_MODES:
+            raise errors.bad_argument(
+                f"نمط البحث «{search_mode}» غير معروف.",
+                "استعمل exact للبحث الحرفي أو root للبحث بالجذر.",
+                f"invalid search_mode {search_mode!r}",
+            )
+
+        groups, field, notes = self.build_groups(query, search_mode)
+        scope = [str(b) for b in book_ids]
+        if not scope:
+            raise errors.bad_argument(
+                "لا كتب منزَّلة في النطاق المطلوب.",
+                "اختر قسمًا فيه كتب منزَّلة، أو نزّل كتب القسم من تطبيق الشاملة.",
+                "empty coverage scope",
+            )
+
+        raw = self.bridge.count_by_book(
+            field=field, mode=match_mode, groups=groups, book_ids=scope
+        )
+        if not raw.get("supported", True):
+            raise errors.engine_unavailable(
+                "count_by_book unsupported: no book field in index",
+                {"problems_ar": ["فهرس هذه المكتبة لا يحمل حقل الكتاب، فتعذّر عدّ المطابقات لكل كتاب."]},
+            )
+
+        rows = raw.get("counts", [])
+        total = 0
+        books: list[BookCount] = []
+        limit = max(1, int(top or 1))
+        for row in rows:
+            try:
+                book_id = int(row["book_id"])
+                hits = int(row["hits"])
+            except (KeyError, TypeError, ValueError):
+                continue
+            total += hits
+            if len(books) >= limit:
+                continue
+            book = self.catalogue.book(book_id)
+            books.append(
+                BookCount(
+                    book_id=book_id,
+                    book_name=book.name if book else f"كتاب غير معروف ({book_id})",
+                    author_label=book.author_label if book else "المؤلف غير مذكور",
+                    category_name=book.category_name if book else "قسم غير معروف",
+                    hits=hits,
+                )
+            )
+
+        return CoverageOutcome(
+            query=query,
+            match_mode=match_mode,
+            search_mode="root" if field == "m_body" else "exact",
+            field=field,
+            scope_label_ar=scope_label_ar,
+            books_in_scope=len(scope),
+            books_with_matches=len(rows),
+            total_hits=total,
+            books=books,
+            shown_hits=sum(b.hits for b in books),
+            truncated=len(rows) > len(books),
+            notes_ar=notes,
         )
 
     # ---------- passage assembly ----------

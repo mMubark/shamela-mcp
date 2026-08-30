@@ -18,7 +18,11 @@ BATCH_FILES = sorted(REPO.glob("*.bat"))
 
 
 def test_batch_files_are_present() -> None:
-    assert {path.name for path in BATCH_FILES} == {"setup.bat", "uninstall.bat"}
+    assert {path.name for path in BATCH_FILES} == {
+        "setup.bat",
+        "update.bat",
+        "uninstall.bat",
+    }
 
 
 @pytest.mark.parametrize("path", BATCH_FILES, ids=lambda p: p.name)

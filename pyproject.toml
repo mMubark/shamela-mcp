@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "shamela-mcp"
-version = "1.0.0"
+version = "1.1.0"
 description = "MCP server exposing the local Al-Maktaba Al-Shamela 4 library to Claude Desktop"
 readme = "README.md"
 requires-python = ">=3.10"

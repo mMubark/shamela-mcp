@@ -15,8 +15,13 @@ from mcp.types import CallToolResult
 from pydantic import Field
 
 from .. import notes as notes_mod
-from ..config import DEFAULT_SEARCH_LIMIT, MAX_SEARCH_LIMIT
-from ..render import passage_dict, search_text
+from ..config import (
+    DEFAULT_COVERAGE_BOOKS,
+    DEFAULT_SEARCH_LIMIT,
+    MAX_COVERAGE_BOOKS,
+    MAX_SEARCH_LIMIT,
+)
+from ..render import coverage_dict, coverage_text, passage_dict, search_text
 from .shared import clamp, reply, tool
 
 _QUOTE_PAIRS = (("«", "»"), ('"', '"'), ("“", "”"), ("'", "'"))
@@ -105,6 +110,38 @@ def _run(
     if extra:
         structured.update(extra)
     return reply(search_text(outcome, notes), structured)
+
+
+def _coverage(
+    context,
+    *,
+    query: str,
+    match_mode: str,
+    search_mode: str,
+    book_ids: list[int],
+    top: int,
+    scope_label_ar: str,
+) -> CallToolResult:
+    engine = context.require_engine()
+    text, match_mode = _unquote(query, match_mode)
+
+    outcome = engine.coverage(
+        query=text,
+        match_mode=match_mode,
+        search_mode=search_mode,
+        book_ids=book_ids,
+        top=top,
+        scope_label_ar=scope_label_ar,
+    )
+
+    notes = notes_mod.Notes()
+    notes.extend(outcome.notes_ar)
+    notes.add(
+        "هذه الأعداد محصورة في الكتب المنزَّلة، وهي عدد الصفحات المطابقة لا عدد "
+        "المسائل؛ وكثرة المواضع في كتاب لا تعني أنه أوثق ولا أنه الأصل في المسألة."
+    )
+    return reply(coverage_text(outcome, notes), {**coverage_dict(outcome),
+                                                 "notes_ar": notes.as_list()})
 
 
 def category_catalogue_text(context) -> str:
@@ -204,6 +241,52 @@ def register(mcp, context) -> None:
                     for c in resolved
                 ]
             },
+        )
+
+    # ---------- where the matches are ----------
+
+    @mcp.tool(
+        name="shamela_search_coverage",
+        description=(
+            "يعدّ مواضع المطابقة في كل كتاب على حدة، فيبيّن أين تقع النتائج لا نصوصها: "
+            "كم كتابًا بُحث فيه، وكم كتابًا فيه مطابقة فعلًا، وتوزيع المواضع على الكتب "
+            "مرتَّبة بالأكثر. استعمله قبل الحكم بأن مسألة لم ترد أو أنها نادرة، وحين "
+            "يسأل المستخدم: هل بحثتَ في جميع الكتب؟ وحين تريد اختيار الكتب الجديرة "
+            "بالقراءة قبل جلب نصوصها. اتركه بلا categories للمكتبة كلها، أو مرّر "
+            "أرقام الأقسام لحصر النطاق. لا يعيد نصوص الصفحات؛ لقراءتها استعمل "
+            "shamela_search_book بالاستعلام نفسه مع book_id من هذه القائمة."
+        ),
+    )
+    @tool("shamela_search_coverage")
+    def shamela_search_coverage(
+        query: QueryArg,
+        categories: Annotated[
+            list[str] | None,
+            Field(description="أرقام الأقسام أو أسماؤها لحصر النطاق، أو اتركه فارغًا للمكتبة كلها."),
+        ] = None,
+        match_mode: MatchModeArg = "all_terms",
+        search_mode: SearchModeArg = "exact",
+        top: Annotated[
+            int,
+            Field(description=f"عدد الكتب المعروضة في القائمة (1–{MAX_COVERAGE_BOOKS}).",
+                  ge=1, le=MAX_COVERAGE_BOOKS),
+        ] = DEFAULT_COVERAGE_BOOKS,
+    ) -> CallToolResult:
+        if categories:
+            resolved = context.resolve_categories(categories)
+            book_ids = context.catalogue.category_book_ids([c.id for c in resolved])
+            label = "، ".join(f"{c.name} ({c.id})" for c in resolved) or "أقسام محدّدة"
+        else:
+            book_ids = context.catalogue.downloaded_book_ids()
+            label = "المكتبة كلها"
+        return _coverage(
+            context,
+            query=query,
+            match_mode=match_mode,
+            search_mode=search_mode,
+            book_ids=book_ids,
+            top=clamp(top, 1, MAX_COVERAGE_BOOKS, DEFAULT_COVERAGE_BOOKS),
+            scope_label_ar=label,
         )
 
     # ---------- one book ----------

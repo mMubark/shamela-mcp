@@ -153,4 +153,4 @@ this wording is not a ruling that the question is absent from those books.
 | `cursor.py` | cursor encoding bound to index generation |
 | `render.py` | the Arabic a scholar reads |
 | `context.py` | process-wide state and lazy initialisation |
-| `tools/` | the ten MCP tools |
+| `tools/` | the eleven MCP tools |

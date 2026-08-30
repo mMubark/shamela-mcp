@@ -27,6 +27,11 @@ DEFAULT_IDLE_MS = 300_000
 DEFAULT_SEARCH_LIMIT = 5
 MAX_SEARCH_LIMIT = 20
 
+# Coverage carries counts, not pages, so a long list costs little; it is capped only
+# because a list of thousands of books is no longer something a reader can weigh.
+DEFAULT_COVERAGE_BOOKS = 25
+MAX_COVERAGE_BOOKS = 200
+
 _PLACEHOLDER = re.compile(r"^\$\{[^}]*\}$")
 
 

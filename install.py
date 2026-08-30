@@ -69,9 +69,16 @@ class Log:
 log = Log(LOG_PATH)
 
 
-def step(number: int, title_ar: str, title_en: str) -> None:
+#: Steps are numbered as they run, so the same stage functions can serve both the
+#: full install and the shorter update run without carrying two sets of numbers.
+_step_number = 0
+
+
+def step(title_ar: str, title_en: str) -> None:
+    global _step_number
+    _step_number += 1
     log("")
-    log(f"[{number}/{TOTAL_STEPS}] {title_ar}  |  {title_en}")
+    log(f"[{_step_number}/{TOTAL_STEPS}] {title_ar}  |  {title_en}")
 
 
 def ok(message: str) -> None:
@@ -111,7 +118,7 @@ def ask(prompt_ar: str) -> str:
 
 
 def check_python() -> None:
-    step(1, "التحقّق من إصدار بايثون", "Checking Python")
+    step("التحقّق من إصدار بايثون", "Checking Python")
     if sys.version_info < (3, 10):
         found = ".".join(str(part) for part in sys.version_info[:3])
         fail(
@@ -150,7 +157,7 @@ def claude_config_path() -> Path:
 
 
 def check_claude(assume_yes: bool) -> Path:
-    step(2, "التحقّق من تطبيق Claude Desktop", "Checking Claude Desktop")
+    step("التحقّق من تطبيق Claude Desktop", "Checking Claude Desktop")
     config_path = claude_config_path()
     config_dir = config_path.parent
 
@@ -194,7 +201,7 @@ def read_configured_library(config_path: Path) -> str | None:
 
 
 def locate_library(config_path: Path, explicit: str | None, assume_yes: bool):
-    step(3, "البحث عن مجلد المكتبة الشاملة", "Locating the Shamela library")
+    step("البحث عن مجلد المكتبة الشاملة", "Locating the Shamela library")
     sys.path.insert(0, str(REPO))
     from shamela_mcp.discover import check_path, find_library, find_runtime
 
@@ -258,7 +265,7 @@ def locate_library(config_path: Path, explicit: str | None, assume_yes: bool):
 
 
 def check_engine_files(library, runtime) -> None:
-    step(4, "التحقّق من ملفات محرك البحث", "Checking the search engine files")
+    step("التحقّق من ملفات محرك البحث", "Checking the search engine files")
     jar = REPO / "java" / "shamela-mcp-helper.jar"
     if jar.is_file():
         ok(f"ملف الوسيط: {jar.name} ({jar.stat().st_size // 1024} ك.ب)")
@@ -288,7 +295,7 @@ def check_engine_files(library, runtime) -> None:
 
 
 def build_venv() -> Path:
-    step(5, "تهيئة بيئة بايثون وتنزيل المتطلّبات", "Preparing the Python environment")
+    step("تهيئة بيئة بايثون وتنزيل المتطلّبات", "Preparing the Python environment")
     venv_dir = REPO / ".venv"
 
     if not VENV_PYTHON.is_file():
@@ -347,7 +354,7 @@ def build_venv() -> Path:
 
 
 def run_selftest(python: Path, library_root: str) -> bool:
-    step(6, "اختبار الاتصال بالمكتبة والبحث فيها", "Testing the library and a real search")
+    step("اختبار الاتصال بالمكتبة والبحث فيها", "Testing the library and a real search")
     env = dict(os.environ)
     env["SHAMELA_MCP_DIR"] = library_root
     env["PYTHONIOENCODING"] = "utf-8"
@@ -391,7 +398,7 @@ def prune_backups(config_dir: Path) -> None:
 
 
 def register(config_path: Path, python: Path, library_root: str) -> Path | None:
-    step(7, "إضافة الخادم إلى إعدادات كلود", "Registering with Claude Desktop")
+    step("إضافة الخادم إلى إعدادات كلود", "Registering with Claude Desktop")
     config_dir = config_path.parent
     config_dir.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -493,6 +500,125 @@ def finish(library_root: str, config_path: Path, backup: Path | None, healthy: b
     log("")
 
 
+def git_pull() -> str:
+    """Fetch the newest code when this folder is a git checkout.
+
+    Returns a short Arabic description of what happened. A folder that was unzipped
+    rather than cloned is not an error: it is updated by replacing the files, and the
+    rest of the update -- dependencies, self-test, staleness check -- still applies.
+    """
+    step("جلب آخر تحديث للبرنامج", "Fetching the latest code")
+    if not (REPO / ".git").exists():
+        warn("هذا المجلد ليس نسخة git، فلا يمكن جلب التحديث تلقائيًّا.")
+        log("     لتحديثه: نزّل النسخة الجديدة، وانسخ ملفاتها فوق ملفات هذا المجلد،")
+        log("     ثم شغّل update.bat مرة أخرى. ولا تحذف مجلد .venv فلا حاجة إلى ذلك.")
+        return "مجلد غير مرتبط بـ git"
+
+    if shutil.which("git") is None:
+        warn("لم يُعثر على git على هذا الجهاز، فتُخطَّى خطوة الجلب.")
+        return "git غير مثبَّت"
+
+    before = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=str(REPO),
+                            capture_output=True, text=True)
+    result = subprocess.run(["git", "pull", "--ff-only"], cwd=str(REPO),
+                            capture_output=True, text=True)
+    for line in (result.stdout or "").splitlines():
+        log(f"   {line}")
+    if result.returncode != 0:
+        for line in (result.stderr or "").splitlines()[-6:]:
+            log(f"   {line}")
+        # A failed pull must not stop the rest: the code on disk may already be new,
+        # and reinstalling it is still the right move.
+        warn("تعذّر جلب التحديث (لعلّك عدّلت ملفات البرنامج، أو لا اتصال بالشبكة).")
+        log("     سيُكمَل التحديث بالملفات الموجودة الآن على القرص.")
+        return "تعذّر الجلب"
+
+    after = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=str(REPO),
+                           capture_output=True, text=True)
+    old_id = (before.stdout or "").strip()
+    new_id = (after.stdout or "").strip()
+    if old_id and old_id == new_id:
+        ok(f"البرنامج محدَّث أصلًا (الإصدار {new_id}).")
+        return "لا جديد"
+    ok(f"جُلب التحديث: {old_id} ← {new_id}.")
+    return f"{old_id} ← {new_id}"
+
+
+def check_registration(config_path: Path) -> str | None:
+    """Confirm Claude still points at this folder's interpreter."""
+    step("التحقّق من تسجيل الخادم في إعدادات كلود", "Checking the Claude entry")
+    if not config_path.is_file():
+        warn("لا ملف إعدادات لكلود؛ شغّل setup.bat لتثبيت الخادم أولًا.")
+        return None
+    try:
+        data = json.loads(config_path.read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError):
+        warn("تعذّرت قراءة ملف إعدادات كلود؛ شغّل setup.bat.")
+        return None
+
+    entry = (data.get("mcpServers") or {}).get(SERVER_KEY) or {}
+    command = entry.get("command")
+    library = (entry.get("env") or {}).get("SHAMELA_MCP_DIR")
+    if not command or not library:
+        warn("الخادم غير مسجَّل في إعدادات كلود؛ شغّل setup.bat مرة واحدة.")
+        return None
+    if Path(command) != VENV_PYTHON:
+        warn("التسجيل يشير إلى بايثون آخر غير الموجود في هذا المجلد؛ شغّل setup.bat.")
+        log(f"     المسجَّل: {command}")
+        log(f"     المتوقَّع: {VENV_PYTHON}")
+        return None
+
+    ok("التسجيل سليم، ويشير إلى هذا المجلد.")
+    return library
+
+
+def update() -> int:
+    """Bring an existing installation up to the code on disk, without re-registering."""
+    global TOTAL_STEPS
+    TOTAL_STEPS = 4
+
+    log("=" * 66)
+    log("   تحديث خادم المكتبة الشاملة  |  Updating the Shamela server")
+    log("=" * 66)
+    log(f"   مجلد البرنامج: {REPO}")
+
+    pulled = git_pull()
+    config_path = claude_config_path()
+    library = check_registration(config_path)
+    build_venv()
+
+    healthy = False
+    if library:
+        healthy = run_selftest(VENV_PYTHON, library)
+    else:
+        step("اختبار البحث", "Testing search")
+        warn("تُخطّي الاختبار: لم يُعرف مسار المكتبة من إعدادات كلود.")
+
+    sys.path.insert(0, str(REPO))
+    from shamela_mcp import __version__, build_id
+
+    log("")
+    log("=" * 66)
+    log("   ✅ اكتمل التحديث")
+    log("=" * 66)
+    log(f"   الإصدار: {__version__} — بصمة الملفات: {build_id()}")
+    log(f"   الجلب: {pulled}")
+    if not healthy and library:
+        log("   تنبيه: لم ينجح اختبار البحث؛ انظر التفصيل أعلاه.")
+    log("")
+    log("   خطوة أخيرة لازمة — أغلق Claude Desktop إغلاقًا تامًّا ثم افتحه:")
+    log("     الضغط على ✕ لا يُغلق التطبيق. انقر بالزر الأيمن على أيقونة Claude")
+    log("     بجوار الساعة، ثم اختر Quit، ثم افتح التطبيق من جديد.")
+    log("")
+    log("   للتأكّد من أن كلود يشغّل النسخة الجديدة، اكتب في محادثة جديدة:")
+    log("     افحص مكتبة الشاملة")
+    log("   وانظر السطر: هل البصمة المشتغلة هي بصمة الملفات المذكورة أعلاه.")
+    log("")
+    log(f"   سجل التحديث: {LOG_PATH}")
+    log.close()
+    return 0
+
+
 def uninstall() -> int:
     log("إزالة خادم المكتبة الشاملة من إعدادات كلود  |  Uninstalling")
     config_path = claude_config_path()
@@ -535,11 +661,14 @@ def main() -> int:
     )
     parser.add_argument("--library", help="مسار مجلد المكتبة الشاملة")
     parser.add_argument("--uninstall", action="store_true", help="إزالة الخادم من إعدادات كلود")
+    parser.add_argument("--update", action="store_true", help="تحديث البرنامج دون إعادة التسجيل")
     parser.add_argument("--yes", action="store_true", help="لا تسأل أسئلة تفاعلية")
     args = parser.parse_args()
 
     if args.uninstall:
         return uninstall()
+    if args.update:
+        return update()
 
     started = time.time()
     log("=" * 66)

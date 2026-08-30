@@ -73,6 +73,11 @@ def register(mcp, context) -> None:
             )
             lines.append("")
             warnings.append("الخادم يعمل بنسخة قديمة؛ يلزم إغلاق كلود وفتحه")
+        else:
+            # Stated even when all is well: after an update this line is the only way a
+            # user can confirm that the restart took, rather than inferring it.
+            lines.append(f"✓ بصمة الشيفرة: {RUNNING_BUILD} — النسخة العاملة هي ملفات القرص.")
+            lines.append("")
 
         # ---- library ----
         if not context.has_library:

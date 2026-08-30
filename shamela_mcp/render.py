@@ -8,8 +8,9 @@ model to infer or assemble.
 
 from __future__ import annotations
 
+from . import counting
 from .citation import FOOTNOTE_LABEL_AR
-from .engine import Passage, SearchOutcome
+from .engine import CoverageOutcome, Passage, SearchOutcome
 from .master import Book, Category
 from .notes import Notes
 
@@ -61,7 +62,12 @@ def passage_block(passage: Passage, index: int | None = None) -> str:
     return "\n".join(lines)
 
 
-def search_text(outcome: SearchOutcome, notes: Notes, *, window_start: int = 1) -> str:
+def search_text(
+    outcome: SearchOutcome, notes: Notes, *, window_start: int | None = None
+) -> str:
+    # Numbering continues across pages: a batch labelled 1-5 on every page hides how
+    # little of a large result set has actually been read.
+    window_start = window_start or outcome.window_start
     mode = MATCH_MODE_LABELS.get(outcome.match_mode, outcome.match_mode)
     kind = SEARCH_MODE_LABELS.get(outcome.search_mode, outcome.search_mode)
 
@@ -74,9 +80,15 @@ def search_text(outcome: SearchOutcome, notes: Notes, *, window_start: int = 1) 
     if outcome.passages:
         window_end = window_start + len(outcome.passages) - 1
         total = f"{outcome.total_hits}" + ("" if outcome.total_hits_exact else " (تقريبًا)")
-        header.append(
-            f"إجمالي المواضع المطابقة: {total} — المعروض الآن: {window_start}–{window_end}"
-        )
+        line = f"إجمالي المواضع المطابقة: {total} — المعروض الآن: {window_start}–{window_end}"
+        if outcome.books_in_batch:
+            line += f" — عدد الكتب في هذه الدفعة: {outcome.books_in_batch}"
+        header.append(line)
+        if outcome.total_hits > window_end:
+            header.append(
+                "لم يُعرض إلا هذا القدر من المطابقات؛ فلا تحكم بأنك استوفيت الباب حتى "
+                "تتابع بـ cursor أو تنظر توزيعها على الكتب بـ shamela_search_coverage."
+            )
     else:
         header.append("إجمالي المواضع المطابقة: 0")
 
@@ -104,7 +116,9 @@ def zero_hits_text(outcome: SearchOutcome) -> str:
     """Say plainly that nothing matched, and that this is not a ruling."""
     lines = [f"لا مطابقة نصّية لـ«{outcome.query}» في النطاق المبحوث."]
     if outcome.books_in_scope is not None:
-        lines.append(f"وقد بُحث فعلًا في {outcome.books_in_scope} كتابًا منزَّلًا.")
+        lines.append(
+            f"وقد بُحث فعلًا في {counting.books(outcome.books_in_scope)} من الكتب المنزَّلة."
+        )
     lines.append(
         "وهذا غياب مطابقة نصّية بهذه الصيغة، لا نفي لوجود المسألة أو الحكم في هذه الكتب."
     )
@@ -113,6 +127,90 @@ def zero_hits_text(outcome: SearchOutcome) -> str:
         "search_mode=root للبحث بالجذر، أو توسيع النطاق."
     )
     return "\n".join(lines)
+
+
+def joined(lines: list[str], notes: Notes) -> str:
+    """Body lines, with the response notes as a trailing block when there are any."""
+    rendered = notes.render()
+    body = "\n".join(lines)
+    return f"{body}\n\n{rendered}" if rendered else body
+
+
+def coverage_text(outcome: CoverageOutcome, notes: Notes) -> str:
+    """Where the matches are, book by book -- the answer to "did it search them all?"."""
+    mode = MATCH_MODE_LABELS.get(outcome.match_mode, outcome.match_mode)
+    kind = SEARCH_MODE_LABELS.get(outcome.search_mode, outcome.search_mode)
+
+    lines = [
+        f"توزيع المطابقات على الكتب — «{outcome.query}» — النمط: {mode} ({kind})",
+        f"النطاق: {outcome.scope_label_ar} — عدد الكتب المبحوث فيها: {outcome.books_in_scope}",
+    ]
+
+    if not outcome.books:
+        lines.append(
+            "لا مطابقة نصّية في أيّ كتاب من كتب النطاق "
+            f"({counting.books(outcome.books_in_scope)} من الكتب المنزَّلة بُحث فيها كلِّها)."
+        )
+        lines.append(
+            "وهذا غياب مطابقة نصّية بهذه الصيغة، لا نفي لوجود المسألة في هذه الكتب؛ "
+            "جرّب صيغة أخرى أو مرادفًا أو match_mode=any_terms أو search_mode=root."
+        )
+        return joined(lines, notes)
+
+    lines.append(
+        f"الكتب التي فيها مطابقة: {outcome.books_with_matches} من {outcome.books_in_scope} "
+        f"— إجمالي المواضع: {outcome.total_hits}"
+    )
+    lines.append("")
+    lines.append(f"أكثر الكتب مطابقةً ({counting.books(len(outcome.books))}):")
+    for book in outcome.books:
+        lines.append(
+            f"- {book.name_line()} — {counting.places(book.hits)} — القسم: {book.category_name} "
+            f"— book_id={book.book_id}"
+        )
+
+    if outcome.truncated:
+        rest_books = outcome.books_with_matches - len(outcome.books)
+        rest_hits = outcome.total_hits - outcome.shown_hits
+        lines.append("")
+        lines.append(
+            f"ولم تُعرض {counting.books(rest_books)} أخرى فيها "
+            f"{counting.places(rest_hits)}؛ ارفع top لعرضها."
+        )
+
+    lines.append("")
+    lines.append(
+        "هذه أعداد المواضع لا نصوصها؛ لقراءة نصوص كتاب منها استعمل shamela_search_book "
+        "بالاستعلام نفسه مع book_id."
+    )
+
+    return joined(lines, notes)
+
+
+def coverage_dict(outcome: CoverageOutcome) -> dict:
+    return {
+        "query": outcome.query,
+        "match_mode": outcome.match_mode,
+        "search_mode": outcome.search_mode,
+        "field": outcome.field,
+        "scope_ar": outcome.scope_label_ar,
+        "books_in_scope": outcome.books_in_scope,
+        "books_with_matches": outcome.books_with_matches,
+        "total_hits": outcome.total_hits,
+        "shown_books": len(outcome.books),
+        "shown_hits": outcome.shown_hits,
+        "truncated": outcome.truncated,
+        "books": [
+            {
+                "book_id": b.book_id,
+                "book_name": b.book_name,
+                "author": b.author_label,
+                "category_name": b.category_name,
+                "hits": b.hits,
+            }
+            for b in outcome.books
+        ],
+    }
 
 
 def passage_dict(passage: Passage) -> dict:
